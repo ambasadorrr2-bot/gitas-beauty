@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Gita's Beauty Booking",
+    "slug": "gitas-beauty-booking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ff6b8b"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gitasbeauty.booking"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ff6b8b"
+      },
+      "package": "com.gitasbeauty.booking"
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "description": "Professional booking app for Gita's Beauty Salon services",
+    "githubUrl": "https://github.com/your-username/gitas-beauty-booking"
+  }
+}
