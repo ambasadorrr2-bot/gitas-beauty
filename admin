@@ -1,0 +1,535 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Alert,
+  RefreshControl
+} from 'react-native';
+
+const AdminScreen = ({ navigation }) => {
+  const [bookings, setBookings] = useState([]);
+  const [availableTimes, setAvailableTimes] = useState([
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00'
+  ]);
+  const [newTime, setNewTime] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Simulate loading bookings
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  const loadBookings = () => {
+    // Mock data - in real app, this would come from an API
+    const mockBookings = [
+      {
+        id: 1,
+        service: 'Manicure',
+        customer: 'Anna Smith',
+        date: '2024-07-15',
+        time: '10:00',
+        amount: '£35',
+        status: 'confirmed',
+        phone: '+44 1234 567890',
+        email: 'anna.smith@email.com'
+      },
+      {
+        id: 2,
+        service: 'Pedicure',
+        customer: 'John Doe',
+        date: '2024-07-16',
+        time: '14:30',
+        amount: '£35',
+        status: 'pending',
+        phone: '+44 1234 567891',
+        email: 'john.doe@email.com'
+      },
+      {
+        id: 3,
+        service: 'Eyelash Extensions',
+        customer: 'Maria Garcia',
+        date: '2024-07-17',
+        time: '11:00',
+        amount: '£30',
+        status: 'confirmed',
+        phone: '+44 1234 567892',
+        email: 'maria.garcia@email.com'
+      }
+    ];
+    setBookings(mockBookings);
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadBookings();
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const addTimeSlot = () => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!newTime) {
+      Alert.alert('Error', 'Please enter a time');
+      return;
+    }
+    if (!timeRegex.test(newTime)) {
+      Alert.alert('Error', 'Please enter a valid time (HH:MM)');
+      return;
+    }
+    if (availableTimes.includes(newTime)) {
+      Alert.alert('Error', 'This time slot already exists');
+      return;
+    }
+
+    setAvailableTimes([...availableTimes, newTime].sort());
+    setNewTime('');
+    Alert.alert('Success', 'Time slot added successfully');
+  };
+
+  const removeTimeSlot = (time) => {
+    Alert.alert(
+      'Remove Time Slot',
+      `Are you sure you want to remove ${time}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            setAvailableTimes(availableTimes.filter(t => t !== time));
+            Alert.alert('Success', 'Time slot removed successfully');
+          }
+        }
+      ]
+    );
+  };
+
+  const updateBookingStatus = (bookingId, newStatus) => {
+    setBookings(bookings.map(booking => 
+      booking.id === bookingId ? { ...booking, status: newStatus } : booking
+    ));
+    Alert.alert('Success', `Booking ${newStatus}`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'confirmed': return '#28a745';
+      case 'pending': return '#ffc107';
+      case 'cancelled': return '#dc3545';
+      default: return '#6c757d';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'confirmed': return 'Confirmed';
+      case 'pending': return 'Pending';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
+    }
+  };
+
+  const calculateRevenue = () => {
+    return bookings.reduce((sum, booking) => sum + parseInt(booking.amount.replace('£', '')), 0);
+  };
+
+  const getPendingCount = () => {
+    return bookings.filter(b => b.status === 'pending').length;
+  };
+
+  return (
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Admin Dashboard</Text>
+        <Text style={styles.headerSubtitle}>Manage bookings and availability</Text>
+      </View>
+
+      {/* Quick Stats */}
+      <View style={styles.statsSection}>
+        <Text style={styles.sectionTitle}>📊 Today's Overview</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{bookings.length}</Text>
+            <Text style={styles.statLabel}>Total Bookings</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>£{calculateRevenue()}</Text>
+            <Text style={styles.statLabel}>Revenue</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{getPendingCount()}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Recent Bookings */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📋 Recent Bookings</Text>
+        {bookings.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No bookings yet</Text>
+            <Text style={styles.emptyStateSubtext}>Bookings will appear here</Text>
+          </View>
+        ) : (
+          bookings.map((booking) => (
+            <View key={booking.id} style={styles.bookingCard}>
+              <View style={styles.bookingHeader}>
+                <Text style={styles.bookingService}>{booking.service}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) }]}>
+                  <Text style={styles.statusText}>{getStatusText(booking.status)}</Text>
+                </View>
+              </View>
+              <Text style={styles.bookingCustomer}>👤 {booking.customer}</Text>
+              <Text style={styles.bookingDateTime}>📅 {booking.date} at {booking.time}</Text>
+              <Text style={styles.bookingContact}>📞 {booking.phone}</Text>
+              <Text style={styles.bookingEmail}>📧 {booking.email}</Text>
+              <Text style={styles.bookingAmount}>💰 {booking.amount}</Text>
+              
+              <View style={styles.bookingActions}>
+                {booking.status === 'pending' && (
+                  <>
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.confirmButton]}
+                      onPress={() => updateBookingStatus(booking.id, 'confirmed')}
+                    >
+                      <Text style={styles.actionButtonText}>Confirm</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.cancelButton]}
+                      onPress={() => updateBookingStatus(booking.id, 'cancelled')}
+                    >
+                      <Text style={styles.actionButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.detailsButton]}
+                  onPress={() => Alert.alert('Booking Details', 
+                    `Service: ${booking.service}\nCustomer: ${booking.customer}\nDate: ${booking.date}\nTime: ${booking.time}\nPhone: ${booking.phone}\nEmail: ${booking.email}\nAmount: ${booking.amount}\nStatus: ${getStatusText(booking.status)}`
+                  )}
+                >
+                  <Text style={styles.actionButtonText}>Details</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+
+      {/* Time Management */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⏰ Manage Time Slots</Text>
+        
+        {/* Add New Time */}
+        <View style={styles.addTimeContainer}>
+          <TextInput
+            style={styles.timeInput}
+            placeholder="Enter new time (HH:MM)"
+            value={newTime}
+            onChangeText={setNewTime}
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+          />
+          <TouchableOpacity style={styles.addButton} onPress={addTimeSlot}>
+            <Text style={styles.addButtonText}>Add Time</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Available Times */}
+        <Text style={styles.subsectionTitle}>Available Time Slots ({availableTimes.length})</Text>
+        <View style={styles.timesGrid}>
+          {availableTimes.map((time, index) => (
+            <View key={index} style={styles.timeSlot}>
+              <Text style={styles.timeSlotText}>{time}</Text>
+              <TouchableOpacity 
+                style={styles.removeButton}
+                onPress={() => removeTimeSlot(time)}
+              >
+                <Text style={styles.removeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.quickActionButton}>
+            <Text style={styles.quickActionIcon}>📧</Text>
+            <Text style={styles.quickActionText}>Send Reminders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionButton}>
+            <Text style={styles.quickActionIcon}>📊</Text>
+            <Text style={styles.quickActionText}>View Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionButton}>
+            <Text style={styles.quickActionIcon}>⚙️</Text>
+            <Text style={styles.quickActionText}>Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    backgroundColor: '#6c757d',
+    padding: 30,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  statsSection: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  section: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#666',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ff6b8b',
+    marginBottom: 5,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+  },
+  bookingCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff6b8b',
+  },
+  bookingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bookingService: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  bookingCustomer: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingDateTime: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingContact: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ff6b8b',
+    marginBottom: 10,
+  },
+  bookingActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#28a745',
+  },
+  cancelButton: {
+    backgroundColor: '#dc3545',
+  },
+  detailsButton: {
+    backgroundColor: '#6c757d',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  addTimeContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  timeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginRight: 10,
+    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  timesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  timeSlot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e9ecef',
+    padding: 10,
+    borderRadius: 8,
+    margin: 5,
+  },
+  timeSlotText: {
+    marginRight: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  removeButton: {
+    backgroundColor: '#dc3545',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickActionButton: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  quickActionIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  quickActionText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+});
+
+export default AdminScreen;
