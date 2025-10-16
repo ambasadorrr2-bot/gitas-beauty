@@ -1,0 +1,379 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert
+} from 'react-native';
+
+const BookingScreen = ({ route, navigation }) => {
+  const { service } = route.params;
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  const generateDates = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const dates = generateDates();
+  
+  const availableTimes = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00'
+  ];
+
+  const handleBooking = () => {
+    if (!selectedDate || !selectedTime) {
+      Alert.alert('Selection Required', 'Please select both date and time to continue.');
+      return;
+    }
+
+    navigation.navigate('Checkout', {
+      service,
+      date: selectedDate,
+      time: selectedTime
+    });
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  };
+
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+  };
+
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      {/* Service Header */}
+      <View style={styles.serviceHeader}>
+        <Text style={styles.serviceIcon}>
+          {service.icon || '💅'}
+        </Text>
+        <Text style={styles.serviceTitle}>{service.name}</Text>
+        <Text style={styles.servicePrice}>{service.price}</Text>
+        <Text style={styles.serviceDuration}>{service.duration}</Text>
+      </View>
+
+      {/* Date Selection */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>📅 Select Date</Text>
+        <Text style={styles.sectionSubtitle}>Available for next 30 days</Text>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.datesScrollView}
+        >
+          <View style={styles.datesContainer}>
+            {dates.map((date, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.dateButton,
+                  selectedDate?.toDateString() === date.toDateString() && 
+                  styles.dateButtonSelected,
+                  isWeekend(date) && styles.weekendDate,
+                  isToday(date) && styles.todayDate
+                ]}
+                onPress={() => !isWeekend(date) && setSelectedDate(date)}
+                disabled={isWeekend(date)}
+              >
+                <Text style={[
+                  styles.dateWeekday,
+                  selectedDate?.toDateString() === date.toDateString() && 
+                  styles.dateTextSelected,
+                  isWeekend(date) && styles.weekendText,
+                  isToday(date) && styles.todayText
+                ]}>
+                  {formatDate(date).split(' ')[0]}
+                </Text>
+                <Text style={[
+                  styles.dateDay,
+                  selectedDate?.toDateString() === date.toDateString() && 
+                  styles.dateTextSelected,
+                  isWeekend(date) && styles.weekendText,
+                  isToday(date) && styles.todayText
+                ]}>
+                  {date.getDate()}
+                </Text>
+                <Text style={[
+                  styles.dateMonth,
+                  selectedDate?.toDateString() === date.toDateString() && 
+                  styles.dateTextSelected,
+                  isWeekend(date) && styles.weekendText,
+                  isToday(date) && styles.todayText
+                ]}>
+                  {formatDate(date).split(' ')[1]}
+                </Text>
+                {isToday(date) && (
+                  <Text style={styles.todayLabel}>Today</Text>
+                )}
+                {isWeekend(date) && (
+                  <Text style={styles.weekendLabel}>Closed</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* Time Selection */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⏰ Select Time</Text>
+        <Text style={styles.sectionSubtitle}>Choose your preferred time slot</Text>
+        
+        <View style={styles.timesContainer}>
+          {availableTimes.map((time, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.timeButton,
+                selectedTime === time && styles.timeButtonSelected
+              ]}
+              onPress={() => setSelectedTime(time)}
+            >
+              <Text style={[
+                styles.timeText,
+                selectedTime === time && styles.timeTextSelected
+              ]}>
+                {time}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Selected Appointment Summary */}
+      {(selectedDate || selectedTime) && (
+        <View style={styles.selectionSummary}>
+          <Text style={styles.summaryTitle}>Selected Appointment:</Text>
+          <Text style={styles.summaryText}>
+            {selectedDate ? formatDate(selectedDate) : 'No date selected'} 
+            {' at '}
+            {selectedTime || 'no time selected'}
+          </Text>
+        </View>
+      )}
+
+      {/* Continue Button */}
+      <TouchableOpacity 
+        style={[
+          styles.continueButton,
+          (!selectedDate || !selectedTime) && styles.continueButtonDisabled
+        ]}
+        onPress={handleBooking}
+        disabled={!selectedDate || !selectedTime}
+      >
+        <Text style={styles.continueButtonText}>
+          {(!selectedDate || !selectedTime) 
+            ? 'Select Date & Time' 
+            : 'Continue to Checkout →'
+          }
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  serviceHeader: {
+    backgroundColor: '#ff6b8b',
+    padding: 30,
+    alignItems: 'center',
+  },
+  serviceIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  serviceTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  servicePrice: {
+    fontSize: 20,
+    color: '#fff',
+    marginBottom: 5,
+  },
+  serviceDuration: {
+    fontSize: 16,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  section: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    color: '#333',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+  },
+  datesScrollView: {
+    marginHorizontal: -20,
+  },
+  datesContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  dateButton: {
+    alignItems: 'center',
+    padding: 15,
+    marginRight: 10,
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+    minWidth: 70,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  dateButtonSelected: {
+    backgroundColor: '#ff6b8b',
+    borderColor: '#ff6b8b',
+  },
+  weekendDate: {
+    backgroundColor: '#f8f9fa',
+    opacity: 0.5,
+  },
+  todayDate: {
+    borderColor: '#28a745',
+  },
+  dateWeekday: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+    marginBottom: 5,
+  },
+  dateDay: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  dateMonth: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  dateTextSelected: {
+    color: '#fff',
+  },
+  weekendText: {
+    color: '#999',
+  },
+  todayText: {
+    color: '#28a745',
+  },
+  todayLabel: {
+    fontSize: 10,
+    color: '#28a745',
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  weekendLabel: {
+    fontSize: 10,
+    color: '#ff6b6b',
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  timesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  timeButton: {
+    width: '30%',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  timeButtonSelected: {
+    backgroundColor: '#ff6b8b',
+    borderColor: '#ff6b8b',
+  },
+  timeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  timeTextSelected: {
+    color: '#fff',
+  },
+  selectionSummary: {
+    backgroundColor: '#e7f3ff',
+    margin: 20,
+    padding: 15,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff',
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0066cc',
+    marginBottom: 5,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#0066cc',
+  },
+  continueButton: {
+    backgroundColor: '#ff6b8b',
+    margin: 20,
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});
+
+export default BookingScreen;
