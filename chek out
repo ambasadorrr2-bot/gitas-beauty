@@ -1,0 +1,481 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert
+} from 'react-native';
+
+const CheckoutScreen = ({ route, navigation }) => {
+  const { service, date, time } = route.params;
+  const [paymentMethod, setPaymentMethod] = useState('full');
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const calculateAmount = () => {
+    const price = parseInt(service.price.replace('£', ''));
+    return paymentMethod === 'deposit' ? price * 0.25 : price;
+  };
+
+  const handlePayment = async () => {
+    if (!selectedPayment) {
+      Alert.alert('Payment Required', 'Please select a payment method.');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    // Simulate payment processing
+    setTimeout(() => {
+      setIsProcessing(false);
+      Alert.alert(
+        'Confirm Booking',
+        `Are you sure you want to book ${service.name} on ${date.toDateString()} at ${time} for £${calculateAmount().toFixed(2)}?`,
+        [
+          { 
+            text: 'Cancel', 
+            style: 'cancel',
+            onPress: () => console.log('Booking cancelled')
+          },
+          { 
+            text: 'Confirm & Pay', 
+            onPress: () => {
+              navigation.navigate('Confirmation', {
+                service,
+                date,
+                time,
+                amount: calculateAmount(),
+                paymentType: paymentMethod
+              });
+            }
+          }
+        ]
+      );
+    }, 1500);
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      {/* Progress Indicator */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressStep}>
+          <View style={[styles.progressCircle, styles.progressCircleCompleted]}>
+            <Text style={styles.progressText}>1</Text>
+          </View>
+          <Text style={styles.progressLabel}>Service</Text>
+        </View>
+        <View style={styles.progressLine} />
+        <View style={styles.progressStep}>
+          <View style={[styles.progressCircle, styles.progressCircleCompleted]}>
+            <Text style={styles.progressText}>2</Text>
+          </View>
+          <Text style={styles.progressLabel}>Date & Time</Text>
+        </View>
+        <View style={styles.progressLine} />
+        <View style={styles.progressStep}>
+          <View style={[styles.progressCircle, styles.progressCircleActive]}>
+            <Text style={styles.progressText}>3</Text>
+          </View>
+          <Text style={styles.progressLabel}>Payment</Text>
+        </View>
+      </View>
+
+      {/* Booking Summary */}
+      <View style={styles.summarySection}>
+        <Text style={styles.sectionTitle}>📋 Booking Summary</Text>
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Service</Text>
+            <Text style={styles.summaryValue}>{service.name}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Date</Text>
+            <Text style={styles.summaryValue}>{formatDate(date)}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Time</Text>
+            <Text style={styles.summaryValue}>{time}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Duration</Text>
+            <Text style={styles.summaryValue}>{service.duration}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Payment Options */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>💰 Payment Option</Text>
+        
+        <TouchableOpacity
+          style={[
+            styles.paymentOption,
+            paymentMethod === 'full' && styles.paymentOptionSelected
+          ]}
+          onPress={() => setPaymentMethod('full')}
+        >
+          <View style={styles.radioContainer}>
+            <View style={[
+              styles.radio,
+              paymentMethod === 'full' && styles.radioSelected
+            ]} />
+          </View>
+          <View style={styles.paymentInfo}>
+            <Text style={styles.paymentTitle}>Pay in full</Text>
+            <Text style={styles.paymentPrice}>{service.price}</Text>
+            <Text style={styles.paymentDescription}>One-time complete payment</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.paymentOption,
+            paymentMethod === 'deposit' && styles.paymentOptionSelected
+          ]}
+          onPress={() => setPaymentMethod('deposit')}
+        >
+          <View style={styles.radioContainer}>
+            <View style={[
+              styles.radio,
+              paymentMethod === 'deposit' && styles.radioSelected
+            ]} />
+          </View>
+          <View style={styles.paymentInfo}>
+            <Text style={styles.paymentTitle}>25% Deposit</Text>
+            <Text style={styles.paymentPrice}>£{(parseInt(service.price.replace('£', '')) * 0.25).toFixed(2)}</Text>
+            <Text style={styles.paymentDescription}>Remaining balance due at appointment</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Payment Method */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>💳 Payment Method</Text>
+        
+        <TouchableOpacity
+          style={[
+            styles.paymentMethod,
+            selectedPayment === 'paypal' && styles.paymentMethodSelected
+          ]}
+          onPress={() => setSelectedPayment('paypal')}
+        >
+          <Text style={styles.paymentMethodIcon}>📱</Text>
+          <View style={styles.paymentMethodInfo}>
+            <Text style={styles.paymentMethodText}>PayPal</Text>
+            <Text style={styles.paymentMethodDescription}>Secure online payments</Text>
+          </View>
+          <View style={[
+            styles.paymentMethodRadio,
+            selectedPayment === 'paypal' && styles.paymentMethodRadioSelected
+          ]} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.paymentMethod,
+            selectedPayment === 'revolut' && styles.paymentMethodSelected
+          ]}
+          onPress={() => setSelectedPayment('revolut')}
+        >
+          <Text style={styles.paymentMethodIcon}>💸</Text>
+          <View style={styles.paymentMethodInfo}>
+            <Text style={styles.paymentMethodText}>Revolut</Text>
+            <Text style={styles.paymentMethodDescription}>Fast bank transfers</Text>
+          </View>
+          <View style={[
+            styles.paymentMethodRadio,
+            selectedPayment === 'revolut' && styles.paymentMethodRadioSelected
+          ]} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Total Amount */}
+      <View style={styles.totalSection}>
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>Total Amount</Text>
+          <Text style={styles.totalAmount}>£{calculateAmount().toFixed(2)}</Text>
+        </View>
+        {paymentMethod === 'deposit' && (
+          <Text style={styles.depositNote}>
+            * £{(parseInt(service.price.replace('£', '')) * 0.75).toFixed(2)} remaining to pay at salon
+          </Text>
+        )}
+      </View>
+
+      {/* Pay Button */}
+      <TouchableOpacity 
+        style={[
+          styles.payButton,
+          (!selectedPayment || isProcessing) && styles.payButtonDisabled
+        ]}
+        onPress={handlePayment}
+        disabled={!selectedPayment || isProcessing}
+      >
+        {isProcessing ? (
+          <Text style={styles.payButtonText}>Processing...</Text>
+        ) : (
+          <Text style={styles.payButtonText}>
+            {selectedPayment ? `Pay £${calculateAmount().toFixed(2)} with ${selectedPayment === 'paypal' ? 'PayPal' : 'Revolut'}` : 'Select Payment Method'}
+          </Text>
+        )}
+      </TouchableOpacity>
+
+      {/* Security Note */}
+      <View style={styles.securityNote}>
+        <Text style={styles.securityIcon}>🔒</Text>
+        <Text style={styles.securityText}>Your payment is secure and encrypted</Text>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  progressCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  progressCircleCompleted: {
+    backgroundColor: '#28a745',
+  },
+  progressCircleActive: {
+    backgroundColor: '#ff6b8b',
+  },
+  progressText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#ddd',
+    marginHorizontal: 10,
+  },
+  section: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  summarySection: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  summaryCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 20,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff6b8b',
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  summaryLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: '#f8f9fa',
+  },
+  paymentOptionSelected: {
+    borderColor: '#ff6b8b',
+    backgroundColor: '#fff5f7',
+  },
+  radioContainer: {
+    marginRight: 15,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+  },
+  radioSelected: {
+    borderColor: '#ff6b8b',
+    backgroundColor: '#ff6b8b',
+  },
+  paymentInfo: {
+    flex: 1,
+  },
+  paymentTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 5,
+  },
+  paymentPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ff6b8b',
+    marginBottom: 5,
+  },
+  paymentDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  paymentMethod: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: '#f8f9fa',
+  },
+  paymentMethodSelected: {
+    borderColor: '#ff6b8b',
+    backgroundColor: '#fff5f7',
+  },
+  paymentMethodIcon: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  paymentMethodInfo: {
+    flex: 1,
+  },
+  paymentMethodText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 5,
+  },
+  paymentMethodDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  paymentMethodRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+  },
+  paymentMethodRadioSelected: {
+    borderColor: '#ff6b8b',
+    backgroundColor: '#ff6b8b',
+  },
+  totalSection: {
+    padding: 20,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  totalLabel: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  totalAmount: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ff6b8b',
+  },
+  depositNote: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  payButton: {
+    backgroundColor: '#ff6b8b',
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  payButtonDisabled: {
+    backgroundColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  payButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    backgroundColor: '#f8f9fa',
+    margin: 20,
+    borderRadius: 8,
+  },
+  securityIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  securityText: {
+    fontSize: 14,
+    color: '#666',
+  },
+});
+
+export default CheckoutScreen;
