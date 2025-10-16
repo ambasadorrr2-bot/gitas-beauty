@@ -1,0 +1,62 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { SafeAreaView, StatusBar } from 'react-native';
+
+// Import screens
+import HomeScreen from './screens/HomeScreen';
+import BookingScreen from './screens/BookingScreen';
+import CheckoutScreen from './screens/CheckoutScreen';
+import AdminScreen from './screens/AdminScreen';
+import ConfirmationScreen from './screens/ConfirmationScreen';
+
+const Stack = createStackNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <SafeAreaView style={{ flex: 1 }}>
+        <StatusBar barStyle="dark-content" backgroundColor="#ff6b8b" />
+        <Stack.Navigator 
+          initialRouteName="Home"
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#ff6b8b',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+            headerBackTitle: 'Back',
+          }}
+        >
+          <Stack.Screen 
+            name="Home" 
+            component={HomeScreen}
+            options={{ title: "Gita's Beauty" }}
+          />
+          <Stack.Screen 
+            name="Booking" 
+            component={BookingScreen}
+            options={({ route }) => ({ title: `Book ${route.params.service.name}` })}
+          />
+          <Stack.Screen 
+            name="Checkout" 
+            component={CheckoutScreen}
+            options={{ title: 'Checkout' }}
+          />
+          <Stack.Screen 
+            name="Admin" 
+            component={AdminScreen}
+            options={{ title: 'Admin Panel' }}
+          />
+          <Stack.Screen 
+            name="Confirmation" 
+            component={ConfirmationScreen}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </SafeAreaView>
+    </NavigationContainer>
+  );
+}
